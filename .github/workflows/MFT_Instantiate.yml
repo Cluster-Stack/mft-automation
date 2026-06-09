@@ -1,0 +1,53 @@
+name: Deploy MFT Agent to AKS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  KEYVAULT_NAME: kv-platform-prod
+  KUBECONFIG_SECRET: aks-kubeconfig
+  AGENT_NAME: mft-agent-01
+  NAMESPACE: mft
+  HELM_CHART_PATH: helm/mft-agent
+
+jobs:
+  deploy-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Azure OIDC Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Download kubeconfig from Azure Key Vault
+        run: |
+          az keyvault secret show \
+            --vault-name $KEYVAULT_NAME \
+            --name $KUBECONFIG_SECRET \
+            --query value -o tsv > kubeconfig
+
+          chmod 600 kubeconfig
+          echo "KUBECONFIG=$PWD/kubeconfig" >> $GITHUB_ENV
+
+      - name: Verify Kubernetes Access
+        run: |
+          kubectl get nodes
+
+      - name: Execute Deployment Script
+        run: |
+          chmod +x scripts/deploy-agent.sh
+
+          ./scripts/deploy-agent.sh \
+            ${AGENT_NAME} \
+            ${NAMESPACE} \
+            ${HELM_CHART_PATH}
