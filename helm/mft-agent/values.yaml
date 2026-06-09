@@ -1,0 +1,13 @@
+replicaCount: 1
+
+image:
+  repository: myacr.azurecr.io/mft-agent
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+agent:
+  name: mft-agent-01
