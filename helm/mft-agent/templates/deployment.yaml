@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: {{ .Values.agent.name }}
+
+spec:
+  replicas: {{ .Values.replicaCount }}
+
+  selector:
+    matchLabels:
+      app: {{ .Values.agent.name }}
+
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.agent.name }}
+
+    spec:
+      containers:
+        - name: mft-agent
+
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+
+          ports:
+            - containerPort: 8080
+
+          volumeMounts:
+            - name: agent-config
+              mountPath: /opt/mft/config
+              readOnly: true
+
+      volumes:
+        - name: agent-config
+          configMap:
+            name: {{ .Values.agent.name }}-config
